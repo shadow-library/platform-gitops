@@ -1,0 +1,73 @@
+# ================================
+# Helm / Kubernetes
+# ================================
+
+# Helm build output
+charts/**/charts/
+charts/**/tmp/
+charts/**/*.tgz
+
+# Helm values that often contain secrets
+*.secrets.yaml
+*.secret.yaml
+values-local.yaml
+
+# Rendered manifests
+rendered/
+*.rendered.yaml
+*.manifest.yaml
+
+# Helm test output
+helm-test-output/
+.helm/
+
+# ================================
+# Kubernetes tooling
+# ================================
+
+# Kubeconfig
+kubeconfig
+.kube/
+
+# Kind / Minikube
+.kind/
+.minikube/
+
+# ================================
+# Environment & secrets
+# ================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.crt
+
+# ================================
+# Editor / OS noise
+# ================================
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+
+# Vim
+*.swp
+*.swo
+
+# ================================
+# Logs & temp files
+# ================================
+
+*.log
+tmp/
+temp/
+.cache/
