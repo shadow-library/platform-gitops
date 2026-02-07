@@ -1,0 +1,10 @@
+apiVersion: v2
+name: node-service
+description: A reusable Helm chart for deploying Node.js services on Kubernetes, designed to work with the shadow service library
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: helm-utils
+    version: 0.1.0
+    repository: 'file://../helm-utils'

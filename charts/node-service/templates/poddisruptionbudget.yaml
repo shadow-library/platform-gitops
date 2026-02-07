@@ -1,0 +1,23 @@
+{{/*
+=============================================================================
+PodDisruptionBudget - Ensure availability during voluntary disruptions
+Only created when HPA is enabled or replicaCount > 1
+=============================================================================
+*/}}
+{{- if or .Values.autoscaling.enabled (gt (int .Values.replicaCount) 1) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "node-service.fullname" . }}
+  labels:
+    {{- include "node-service.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.autoscaling.enabled }}
+  minAvailable: {{ sub .Values.autoscaling.minReplicas 1 | max 1 }}
+  {{- else }}
+  minAvailable: {{ sub .Values.replicaCount 1 | max 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "node-service.selectorLabels" . | nindent 6 }}
+{{- end }}

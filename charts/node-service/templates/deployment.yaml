@@ -1,0 +1,139 @@
+{{/*
+=============================================================================
+Deployment - Main application workload
+=============================================================================
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "node-service.fullname" . }}
+  labels:
+    {{- include "node-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "node-service.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      annotations:
+        # Force rollout on config changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- include "node-service.vaultAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "node-service.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "node-service.serviceAccountName" . }}
+      
+      # Security: Run as non-root user
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # Graceful termination
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: {{ .Values.name }}
+          image: {{ include "node-service.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          # Security: Container-level security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+          
+          ports:
+            {{- if eq (include "node-service.hasHttpServer" .) "true" }}
+            - name: http
+              containerPort: {{ include "node-service.appPort" . }}
+              protocol: TCP
+            {{- end }}
+            - name: health
+              containerPort: {{ include "node-service.healthPort" . }}
+              protocol: TCP
+          
+          # Environment variables from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: {{ include "node-service.configMapName" . }}
+          
+          # Additional environment variables
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          # Resource limits based on size preset
+          resources:
+            {{- include "node-service.resources" . | nindent 12 }}
+          
+          # Liveness probe - is the container alive?
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Readiness probe - is the container ready to serve traffic?
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          volumeMounts:
+            # Temporary directory for Node.js (required for read-only root filesystem)
+            - name: tmp
+              mountPath: /tmp
+            # Cache directory for npm/node
+            - name: cache
+              mountPath: /home/node/.cache
+      
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: cache
+          emptyDir:
+            sizeLimit: 200Mi
+      
+      # Spread pods across nodes for high availability
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "node-service.selectorLabels" . | nindent 14 }}

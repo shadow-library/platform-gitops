@@ -1,0 +1,24 @@
+{{/*
+=============================================================================
+Service - Expose the application within the cluster
+Standardized: ClusterIP only (external access via Ingress)
+Health port is internal only (not exposed via service)
+=============================================================================
+*/}}
+{{- if eq (include "node-service.hasHttpServer" .) "true" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "node-service.fullname" . }}
+  labels:
+    {{- include "node-service.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "node-service.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+{{- end }}

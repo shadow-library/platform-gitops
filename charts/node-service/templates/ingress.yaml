@@ -1,0 +1,73 @@
+{{/*
+=============================================================================
+Ingress - External access to the application
+Routing by type:
+  - api:    /api/*
+  - web:    /
+  - stream: /ws/*, /stream/*
+  - worker: No ingress (background processing)
+Note: No URL rewriting - apps are expected to handle their prefixes
+=============================================================================
+*/}}
+{{- if eq (include "node-service.ingressEnabled" .) "true" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "node-service.fullname" . }}
+  labels:
+    {{- include "node-service.labels" . | nindent 4 }}
+  annotations:
+    {{- if eq .Values.type "stream" }}
+    # Stream-specific: WebSocket support with extended timeouts
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: {{ include "node-service.fullname" . }}
+    {{- else }}
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    {{- end }}
+    # Security headers
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ include "node-service.ingressHost" . }}
+      http:
+        paths:
+          {{- if eq .Values.type "api" }}
+          # API: Match /api/*
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "node-service.fullname" . }}
+                port:
+                  name: http
+          {{- else if eq .Values.type "stream" }}
+          # Stream: Match /ws/* and /stream/*
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "node-service.fullname" . }}
+                port:
+                  name: http
+          - path: /stream
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "node-service.fullname" . }}
+                port:
+                  name: http
+          {{- else }}
+          # Web: Catch-all for static content
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "node-service.fullname" . }}
+                port:
+                  name: http
+          {{- end }}
+{{- end }}

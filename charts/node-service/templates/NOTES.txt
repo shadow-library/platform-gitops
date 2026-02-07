@@ -1,0 +1,127 @@
+================================================================================
+  {{ .Chart.Name }} - {{ .Chart.Description }}
+================================================================================
+
+Name:        {{ .Values.name }}
+Service:     {{ .Values.service }}
+Type:        {{ .Values.type | upper }}
+Image:       {{ include "node-service.image" . }}
+Namespace:   {{ .Release.Namespace }}
+Release:     {{ .Release.Name }}
+
+--------------------------------------------------------------------------------
+DEPLOYMENT INFO
+--------------------------------------------------------------------------------
+
+Replicas:    {{- if .Values.autoscaling.enabled }} HPA ({{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }})
+             {{- else }} {{ .Values.replicaCount }}
+             {{- end }}
+Size:        {{ .Values.size | upper }}
+{{- if eq (include "node-service.hasHttpServer" .) "true" }}
+App Port:    {{ include "node-service.appPort" . }}
+{{- else }}
+App Port:    N/A (worker - no HTTP server)
+{{- end }}
+Health Port: {{ include "node-service.healthPort" . }}
+
+--------------------------------------------------------------------------------
+SERVICE ACCESS
+--------------------------------------------------------------------------------
+
+Service Name: {{ include "node-service.fullname" . }}
+Service Type: ClusterIP (standardized)
+{{- if eq (include "node-service.hasHttpServer" .) "true" }}
+Service Port: 80 (HTTP)
+{{- end }}
+
+Internal URL: http://{{ include "node-service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- if eq (include "node-service.ingressEnabled" .) "true" }}
+
+--------------------------------------------------------------------------------
+INGRESS
+--------------------------------------------------------------------------------
+
+Host: {{ include "node-service.ingressHost" . }}
+{{- if eq .Values.type "api" }}
+Path: /api/*
+{{- else if eq .Values.type "stream" }}
+Path: /ws/*, /stream/*
+{{- else if eq .Values.type "web" }}
+Path: /
+{{- end }}
+
+{{- if eq .Values.type "api" }}
+External URL: http://{{ include "node-service.ingressHost" . }}/api
+{{- else if eq .Values.type "stream" }}
+External URL: http://{{ include "node-service.ingressHost" . }}/ws
+             http://{{ include "node-service.ingressHost" . }}/stream
+{{- else }}
+External URL: http://{{ include "node-service.ingressHost" . }}
+{{- end }}
+{{- else }}
+
+--------------------------------------------------------------------------------
+INGRESS
+--------------------------------------------------------------------------------
+
+{{- if eq .Values.type "worker" }}
+Ingress: Not applicable (worker type - background processing)
+{{- else }}
+Ingress: Disabled (internal-only service)
+{{- end }}
+{{- end }}
+
+--------------------------------------------------------------------------------
+VAULT INTEGRATION
+--------------------------------------------------------------------------------
+
+Vault:   {{ include "node-service.vaultEnabled" . }}
+  {{- if and (hasKey .Values "vault") (hasKey .Values.vault "enabled") }} (explicit override)
+  {{- else }} (default for {{ .Values.type }} type)
+  {{- end }}
+{{- if eq (include "node-service.vaultEnabled" .) "true" }}
+Vault Address: http://vault.vault.svc.cluster.local:8200 (standardized)
+Vault Role:    {{ include "node-service.fullname" . }}
+Secrets Path:  {{ include "node-service.vaultSecretsPath" . }}
+
+Injected Secrets:
+  - App secrets:   {{ include "node-service.vaultAppPath" . }}
+  - Common config: {{ include "node-service.vaultCommonConfigPath" . }}
+  - Common keys:   {{ include "node-service.vaultCommonKeysPath" . }} → {{ include "node-service.vaultSecretsPath" . }}/
+{{- end }}
+
+--------------------------------------------------------------------------------
+HEALTH CHECKS (Standardized)
+--------------------------------------------------------------------------------
+
+Liveness:  GET :{{ include "node-service.healthPort" . }}/health/live
+Readiness: GET :{{ include "node-service.healthPort" . }}/health/ready
+
+--------------------------------------------------------------------------------
+USEFUL COMMANDS
+--------------------------------------------------------------------------------
+
+# View deployment status
+kubectl get deployment {{ include "node-service.fullname" . }} -n {{ .Release.Namespace }}
+
+# View pods
+kubectl get pods -l app.kubernetes.io/name={{ include "node-service.name" . }} -n {{ .Release.Namespace }}
+
+# View logs
+kubectl logs -l app.kubernetes.io/name={{ include "node-service.name" . }} -n {{ .Release.Namespace }} -f
+
+{{- if eq (include "node-service.hasHttpServer" .) "true" }}
+# Port forward to service
+kubectl port-forward svc/{{ include "node-service.fullname" . }} 8080:80 -n {{ .Release.Namespace }}
+{{- end }}
+
+# Describe deployment
+kubectl describe deployment {{ include "node-service.fullname" . }} -n {{ .Release.Namespace }}
+
+{{- if .Values.autoscaling.enabled }}
+
+# View HPA status
+kubectl get hpa {{ include "node-service.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
+
+================================================================================

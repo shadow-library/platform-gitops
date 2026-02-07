@@ -1,0 +1,6 @@
+dependencies:
+- name: helm-utils
+  repository: file://../helm-utils
+  version: 0.1.0
+digest: sha256:68c2f29aed72b766277b1ff1d3de7a61ab055a4e57be411a4baed161ef48b7da
+generated: "2026-02-07T10:28:22.00532+04:00"
