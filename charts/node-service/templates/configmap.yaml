@@ -1,0 +1,27 @@
+{{/*
+=============================================================================
+ConfigMap - Application configuration
+=============================================================================
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "node-service.configMapName" . }}
+  labels:
+    {{- include "node-service.labels" . | nindent 4 }}
+data:
+  # Default configuration values
+  NODE_ENV: production
+  APP_NAME: {{ .Values.name | quote }}
+  APP_ENV: {{ .Values.global.environment | quote }}
+  {{- if eq (include "node-service.vaultEnabled" .) "true" }}
+  VAULT_ENABLED: "true"
+  SECRETS_PATH: {{ include "node-service.vaultSecretsPath" . | quote }}
+  {{- else }}
+  VAULT_ENABLED: "false"
+  {{- end }}
+  
+  # User-provided configuration
+  {{- range $key, $value := .Values.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

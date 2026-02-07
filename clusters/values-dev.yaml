@@ -1,0 +1,5 @@
+global:
+  baseDomain: dev.shadow-apps.com
+  environment: dev
+  registry: ghcr.io
+  organization: shadow-library
