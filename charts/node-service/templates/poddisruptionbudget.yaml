@@ -4,7 +4,7 @@ PodDisruptionBudget - Ensure availability during voluntary disruptions
 Only created when HPA is enabled or replicaCount > 1
 =============================================================================
 */}}
-{{- if or .Values.autoscaling.enabled (gt (int .Values.replicaCount) 1) }}
+{{- if .Values.autoscaling.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

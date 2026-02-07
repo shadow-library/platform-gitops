@@ -115,8 +115,8 @@ All applications must expose health endpoints on port `8081`:
 
 | Probe     | Endpoint            | Initial Delay | Period | Timeout | Failure Threshold |
 | --------- | ------------------- | ------------- | ------ | ------- | ----------------- |
-| Liveness  | `GET /health/live`  | 15s           | 20s    | 5s      | 3                 |
-| Readiness | `GET /health/ready` | 5s            | 10s    | 5s      | 3                 |
+| Liveness  | `GET /health/live`  | 10s           | 10s    | 5s      | 3                 |
+| Readiness | `GET /health/ready` | 10s           | 10s    | 5s      | 3                 |
 
 ### Vault Integration
 
@@ -152,7 +152,7 @@ http://vault.vault.svc.cluster.local:8200
 **Authentication:**
 
 - Method: Kubernetes auth
-- Role: `<release-name>-<name>-<type>`
+- Role: `<release-name>-<name>`
 
 **Secret Paths (environment-based):**
 
@@ -206,8 +206,8 @@ capabilities:
 
 **Topology Spread:**
 
-- Pods are spread across availability zones for high availability
-- `maxSkew: 1` with `ScheduleAnyway` policy
+- Pods are spread across nodes for high availability
+- `maxSkew: 1` with `ScheduleAnyway` policy using `kubernetes.io/hostname`
 
 **Termination:**
 
@@ -218,7 +218,7 @@ capabilities:
 
 When autoscaling is enabled:
 
-- `minAvailable: 1` ensures at least one pod remains during voluntary disruptions
+- `minAvailable: max(1, minReplicas - 1)` ensures availability during voluntary disruptions
 
 ## Example Configurations
 
@@ -362,29 +362,29 @@ To work with this chart, your Node.js application must:
 ### View Deployment Status
 
 ```bash
-kubectl get deployment <release>-<name>-<type> -n <namespace>
+kubectl get deployment <release>-<name> -n <namespace>
 ```
 
 ### View Pod Logs
 
 ```bash
-kubectl logs -l app.kubernetes.io/name=<name>-<type> -n <namespace> -f
+kubectl logs -l app.kubernetes.io/name=<name> -n <namespace> -f
 ```
 
 ### Check HPA Status
 
 ```bash
-kubectl get hpa <release>-<name>-<type> -n <namespace>
+kubectl get hpa <release>-<name> -n <namespace>
 ```
 
 ### Port Forward for Local Testing
 
 ```bash
-kubectl port-forward svc/<release>-<name>-<type> 8080:80 -n <namespace>
+kubectl port-forward svc/<release>-<name> 8080:80 -n <namespace>
 ```
 
 ### Describe Pod for Events
 
 ```bash
-kubectl describe pod -l app.kubernetes.io/name=<name>-<type> -n <namespace>
+kubectl describe pod -l app.kubernetes.io/name=<name> -n <namespace>
 ```

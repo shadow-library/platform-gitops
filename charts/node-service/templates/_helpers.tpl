@@ -5,7 +5,7 @@ Node.js Service Helm Chart - Template Helpers
 */}}
 
 {{/*
-Expand the name of the chart with app type suffix.
+Expand the name of the chart.
 */}}
 {{- define "node-service.name" -}}
 {{- printf "%s" .Values.name | trunc 63 | trimSuffix "-" }}
@@ -281,10 +281,3 @@ vault.hashicorp.com/agent-inject-file-common-keys: {{ include "node-service.vaul
 {{- end }}
 {{- end }}
 
-{{/*
-Network policy label selector for the app
-*/}}
-{{- define "node-service.networkPolicySelector" -}}
-app.kubernetes.io/name: {{ include "node-service.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}

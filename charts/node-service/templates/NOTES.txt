@@ -28,13 +28,15 @@ Health Port: {{ include "node-service.healthPort" . }}
 SERVICE ACCESS
 --------------------------------------------------------------------------------
 
+{{- if eq (include "node-service.hasHttpServer" .) "true" }}
 Service Name: {{ include "node-service.fullname" . }}
 Service Type: ClusterIP (standardized)
-{{- if eq (include "node-service.hasHttpServer" .) "true" }}
 Service Port: 80 (HTTP)
-{{- end }}
 
 Internal URL: http://{{ include "node-service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- else }}
+Service:      None ({{ .Values.type }} type - no HTTP server)
+{{- end }}
 {{- if eq (include "node-service.ingressEnabled" .) "true" }}
 
 --------------------------------------------------------------------------------
@@ -76,7 +78,7 @@ VAULT INTEGRATION
 --------------------------------------------------------------------------------
 
 Vault:   {{ include "node-service.vaultEnabled" . }}
-  {{- if and (hasKey .Values "vault") (hasKey .Values.vault "enabled") }} (explicit override)
+  {{- if and (hasKey .Values "vault") (hasKey .Values.vault "enabled") (not (kindIs "invalid" .Values.vault.enabled)) }} (explicit override)
   {{- else }} (default for {{ .Values.type }} type)
   {{- end }}
 {{- if eq (include "node-service.vaultEnabled" .) "true" }}
