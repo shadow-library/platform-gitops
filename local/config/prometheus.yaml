@@ -1,0 +1,11 @@
+# =============================================================================
+# Prometheus Configuration — Local Development (Docker Compose)
+# =============================================================================
+# Acts as a remote write receiver only.
+# All scraping is done by Grafana Alloy in minikube.
+# Enable --web.enable-remote-write-receiver flag in docker-compose command.
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s

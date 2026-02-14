@@ -6,6 +6,9 @@
 charts/**/charts/
 charts/**/tmp/
 charts/**/*.tgz
+apps/**/charts/
+apps/**/tmp/
+apps/**/*.tgz
 
 # Helm values that often contain secrets
 *.secrets.yaml
@@ -71,3 +74,8 @@ kubeconfig
 tmp/
 temp/
 .cache/
+
+# ================================
+# Docker Data
+# ================================
+local/docker
